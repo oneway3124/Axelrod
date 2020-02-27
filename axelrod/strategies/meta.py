@@ -1,12 +1,9 @@
-import random
-
 from axelrod.action import Action
 from axelrod.player import Player, obey_axelrod
 from axelrod.strategies import TitForTat
 from axelrod.strategy_transformers import NiceTransformer
 
 import numpy as np
-from numpy.random import choice
 
 from ._strategies import all_strategies
 from .hunter import (
@@ -60,6 +57,7 @@ class MetaPlayer(Player):
         self.team = [t() for t in self.team]
 
         super().__init__()
+        self.set_seed()
 
         # This player inherits the classifiers of its team.
         # Note that memory_depth is not simply the max memory_depth of the team.
@@ -75,6 +73,11 @@ class MetaPlayer(Player):
             self.classifier["makes_use_of"].update(t.classifier["makes_use_of"])
 
         self._last_results = None
+
+    def set_seed(self, seed=None):
+        super().set_seed(seed)
+        for t in self.team:
+            t.set_seed(self._random.randint(0, 100000000))
 
     def receive_match_attributes(self):
         for t in self.team:
@@ -210,7 +213,7 @@ class MetaWinnerEnsemble(MetaWinner):
         # Choose one of the best scorers at random
         scores.sort(reverse=True)
         prop = max(1, int(len(scores) * 0.08))
-        index = choice([i for (s, i) in scores[:prop]])
+        index = self._random.choice([i for (s, i) in scores[:prop]])
         return results[index]
 
 
@@ -498,7 +501,7 @@ class MetaMixer(MetaPlayer):
 
     def meta_strategy(self, results, opponent):
         """Using the numpy.random choice function to sample with weights"""
-        return choice(results, p=self.distribution)
+        return self._random.choice(results, p=self.distribution)
 
 
 class NMWEDeterministic(NiceMetaWinnerEnsemble):
@@ -651,14 +654,14 @@ class MemoryDecay(MetaPlayer):
         """
         Alters memory entry, i.e. puts C if there's a D and vice versa.
         """
-        alter = choice(range(0, len(self.memory)))
+        alter = self._random.choice(range(0, len(self.memory)))
         self.memory[alter] = self.memory[alter].flip()
 
     def memory_delete(self):
         """
         Deletes memory entry.
         """
-        self.memory.pop(choice(range(0, len(self.memory))))
+        self.memory.pop(self._random.choice(range(0, len(self.memory))))
 
     def meta_strategy(self, results, opponent):
         try:
@@ -668,9 +671,9 @@ class MemoryDecay(MetaPlayer):
         if len(self.history) < self.start_strategy_duration:
             return results[0]
         else:
-            if random.random() <= self.p_memory_alter:
+            if self._random.random() <= self.p_memory_alter:
                 self.memory_alter()
-            if random.random() <= self.p_memory_delete:
+            if self._random.random() <= self.p_memory_delete:
                 self.memory_delete()
             self.gain_loss_translate()
             if sum(self.gloss_values) < 0:

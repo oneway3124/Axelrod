@@ -4,6 +4,7 @@ from collections import Counter
 import axelrod
 from axelrod import Action
 from axelrod.deterministic_cache import DeterministicCache
+from axelrod.random_ import RandomGenerator
 from axelrod.tests.property import games
 
 from hypothesis import example, given
@@ -81,16 +82,15 @@ class TestMatch(unittest.TestCase):
         outcomes
         """
         p1, p2 = axelrod.Cooperator(), axelrod.Cooperator()
-        match = axelrod.Match((p1, p2), prob_end=0.5)
-        expected_lengths = [3, 1, 5]
+        expected_lengths = [2, 1, 1]
         for seed, expected_length in zip(range(3), expected_lengths):
-            axelrod.seed(seed)
+            match = axelrod.Match((p1, p2), prob_end=0.5, seed=seed)
             self.assertEqual(match.players[0].match_attributes["length"], float("inf"))
             self.assertEqual(len(match.play()), expected_length)
             self.assertEqual(match.noise, 0)
             self.assertEqual(match.game.RPST(), (3, 1, 0, 5))
         self.assertEqual(len(match._cache), 1)
-        self.assertEqual(match._cache[(p1, p2)], [(C, C)] * 5)
+        self.assertEqual(match._cache[(p1, p2)], [(C, C)])
 
     @given(turns=integers(min_value=1, max_value=200), game=games())
     @example(turns=5, game=axelrod.DefaultGame)
@@ -362,16 +362,17 @@ class TestMatch(unittest.TestCase):
 class TestSampleLength(unittest.TestCase):
     def test_sample_length(self):
         for seed, prob_end, expected_length in [
-            (0, 0.5, 3),
+            (0, 0.5, 2),
             (1, 0.5, 1),
-            (2, 0.6, 4),
-            (3, 0.4, 1),
+            (2, 0.6, 1),
+            (3, 0.4, 2),
         ]:
-            axelrod.seed(seed)
-            self.assertEqual(axelrod.match.sample_length(prob_end), expected_length)
+            rg = RandomGenerator(seed)
+            r = rg.random()
+            self.assertEqual(axelrod.match.sample_length(prob_end, r), expected_length)
 
     def test_sample_with_0_prob(self):
-        self.assertEqual(axelrod.match.sample_length(0), float("inf"))
+        self.assertEqual(axelrod.match.sample_length(0, 0.4), float("inf"))
 
     def test_sample_with_1_prob(self):
-        self.assertEqual(axelrod.match.sample_length(1), 1)
+        self.assertEqual(axelrod.match.sample_length(1, 0.6), 1)

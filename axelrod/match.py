@@ -5,6 +5,7 @@ import axelrod.interaction_utils as iu
 from axelrod import DEFAULT_TURNS
 from axelrod.action import Action
 from axelrod.game import Game
+from axelrod.random_ import RandomGenerator
 
 from .deterministic_cache import DeterministicCache
 
@@ -29,7 +30,8 @@ class Match(object):
         deterministic_cache=None,
         noise=0,
         match_attributes=None,
-        reset=True
+        reset=True,
+        seed=None
     ):
         """
         Parameters
@@ -52,6 +54,8 @@ class Match(object):
             but these can be overridden if desired.
         reset : bool
             Whether to reset players or not
+        seed : int
+            Random seed for reproducibility
         """
 
         defaults = {
@@ -64,6 +68,9 @@ class Match(object):
 
         self.result = []
         self.noise = noise
+
+        self.seed = seed
+        self._random = RandomGenerator(seed=self.seed)
 
         if game is None:
             self.game = Game()
@@ -129,6 +136,19 @@ class Match(object):
             return False
         return len(self._cache[cache_key]) >= turns
 
+    def simultaneous_play(self, player, coplayer, noise=0):
+        """This pits two players against each other."""
+        s1, s2 = player.strategy(coplayer), coplayer.strategy(player)
+        if noise:
+            # Note this uses the Match classes random generator, not either
+            # player's random generator. A player shouldn't be able to
+            # predict the outcome of this noise flip.
+            s1 = self.random_flip(s1, noise)
+            s2 = self.random_flip(s2, noise)
+        player.update_history(s1, s2)
+        coplayer.update_history(s2, s1)
+        return s1, s2
+
     def play(self):
         """
         The resulting list of actions from a match between two players.
@@ -147,7 +167,9 @@ class Match(object):
 
         i.e. One entry per turn containing a pair of actions.
         """
-        turns = min(sample_length(self.prob_end), self.turns)
+        self._random = RandomGenerator(seed=self.seed)
+        r = self._random.random()
+        turns = min(sample_length(self.prob_end, r), self.turns)
         cache_key = (self.players[0], self.players[1])
 
         if self._stochastic or not self._cached_enough_turns(cache_key, turns):
@@ -155,9 +177,12 @@ class Match(object):
                 if self.reset:
                     p.reset()
                 p.set_match_attributes(**self.match_attributes)
+                # Generate a random seed for each player
+                p.set_seed(self._random.randint(0, 100000000))
             result = []
             for _ in range(turns):
-                plays = self.players[0].play(self.players[1], self.noise)
+                plays = self.simultaneous_play(
+                    self.players[0], self.players[1], self.noise)
                 result.append(plays)
 
             if self._cache_update_required:
@@ -216,7 +241,7 @@ class Match(object):
         return self.turns
 
 
-def sample_length(prob_end):
+def sample_length(prob_end, random_value):
     """
     Sample length of a game.
 
@@ -249,5 +274,4 @@ def sample_length(prob_end):
         return float("inf")
     if prob_end == 1:
         return 1
-    x = random.random()
-    return int(ceil(log(1 - x) / log(1 - prob_end)))
+    return int(ceil(log(1 - random_value) / log(1 - prob_end)))

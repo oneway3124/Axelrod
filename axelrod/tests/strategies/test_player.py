@@ -1,19 +1,19 @@
 import itertools
 import pickle
-import random
 import types
 import unittest
 
 import axelrod
 import numpy as np
 from axelrod import DefaultGame, Player, LimitedHistory
-from axelrod.player import simultaneous_play
 from axelrod.tests.property import strategy_lists
 
 from hypothesis import given, settings
 from hypothesis.strategies import integers, sampled_from
 
 C, D = axelrod.Action.C, axelrod.Action.D
+
+random = axelrod.RandomGenerator()
 
 short_run_time_short_mem = [
     s for s in axelrod.short_run_time_strategies if s().classifier["memory_depth"] <= 10
@@ -100,11 +100,11 @@ class TestPlayerClass(unittest.TestCase):
         )
 
     def test_noisy_play(self):
-        axelrod.seed(1)
         noise = 0.2
         player1, player2 = self.player(), self.player()
         player1.strategy = cooperate
         player2.strategy = defect
+        match = axelrod.Match((player1, player2), turns=1, seed=seed)
         player1.play(player2, noise)
         self.assertEqual(player1.history[0], D)
         self.assertEqual(player2.history[0], D)
@@ -137,12 +137,9 @@ class TestPlayerClass(unittest.TestCase):
         player2 = player1.clone()
         turns = 50
         for op in [axelrod.Cooperator(), axelrod.Defector(), axelrod.TitForTat()]:
-            player1.reset()
-            player2.reset()
             seed = random.randint(0, 10 ** 6)
             for p in [player1, player2]:
-                axelrod.seed(seed)
-                m = axelrod.Match((p, op), turns=turns)
+                m = axelrod.Match((p, op), turns=turns, reset=True, seed=seed)
                 m.play()
             self.assertEqual(len(player1.history), turns)
             self.assertEqual(player1.history, player2.history)
@@ -408,9 +405,9 @@ class TestPlayer(unittest.TestCase):
         a2 = opponent()
         self.assertEqual(p1, p2)
         for player, op in [(p1, a1), (p2, a2)]:
-            axelrod.seed(seed)
-            for _ in range(10):
-                simultaneous_play(player, op)
+            m = axelrod.Match(players=(player, op), reset=True, seed=seed,
+                              turns=10)
+            m.play()
         self.assertEqual(p1, p2)
         p1 = pickle.loads(pickle.dumps(p1))
         p2 = pickle.loads(pickle.dumps(p2))
@@ -447,10 +444,8 @@ class TestPlayer(unittest.TestCase):
 
             player = self.player()
             clone = player.clone()
-            for seed in range(10):
-                axelrod.seed(seed)
-                player.play(opponent)
-
+            match = axelrod.Match((player, opponent), turns=10, seed=111)
+            match.play()
             player.reset()
             self.assertEqual(player, clone)
 
@@ -460,6 +455,17 @@ class TestPlayer(unittest.TestCase):
         player = self.player()
         clone = player.clone()
         self.assertEqual(player, clone)
+
+    def test_reproducibility_of_play(self):
+        player = self.player()
+        player_clone = player.clone()
+        coplayer = axelrod.Random(0.5)
+        coplayer_clone = coplayer.clone()
+        m1 = axelrod.Match((player, coplayer), turns=10, seed=10)
+        m2 = axelrod.Match((player_clone, coplayer_clone), turns=10, seed=10)
+        m1.play()
+        m2.play()
+        self.assertEqual(m1.result, m2.result)
 
     @given(seed=integers(min_value=1, max_value=20000000))
     @settings(max_examples=1)
@@ -477,19 +483,15 @@ class TestPlayer(unittest.TestCase):
         self.assertEqual(player2.classifier, player1.classifier)
         self.assertEqual(player2.match_attributes, player1.match_attributes)
 
-        turns = 50
-        r = random.random()
+        turns = 20
         for op in [
             axelrod.Cooperator(),
             axelrod.Defector(),
             axelrod.TitForTat(),
-            axelrod.Random(p=r),
+            axelrod.Random(p=0.8),
         ]:
-            player1.reset()
-            player2.reset()
             for p in [player1, player2]:
-                axelrod.seed(seed)
-                m = axelrod.Match((p, op), turns=turns)
+                m = axelrod.Match((p, op), turns=turns, reset=True, seed=seed)
                 m.play()
             self.assertEqual(len(player1.history), turns)
             self.assertEqual(player1.history, player2.history)
@@ -567,9 +569,6 @@ class TestPlayer(unittest.TestCase):
         if init_kwargs is None:
             init_kwargs = dict()
 
-        if seed is not None:
-            axelrod.seed(seed)
-
         player = self.player(**init_kwargs)
 
         match = axelrod.Match(
@@ -577,6 +576,7 @@ class TestPlayer(unittest.TestCase):
             turns=turns,
             noise=noise,
             match_attributes=match_attributes,
+            seed=seed
         )
         self.assertEqual(match.play(), expected_actions)
 
@@ -629,18 +629,22 @@ class TestMatch(unittest.TestCase):
         """Tests a sequence of outcomes for two given players."""
         if len(expected_actions1) != len(expected_actions2):
             raise ValueError("Mismatched History lengths.")
-        if seed:
-            axelrod.seed(seed)
         turns = len(expected_actions1)
-        match = axelrod.Match((player1, player2), turns=turns, noise=noise)
+        match = axelrod.Match((player1, player2), turns=turns, noise=noise, seed=seed)
         match.play()
-        # Test expected sequence of play.
-        for i, (outcome1, outcome2) in enumerate(
-            zip(expected_actions1, expected_actions2)
-        ):
-            player1.play(player2)
-            self.assertEqual(player1.history[i], outcome1)
-            self.assertEqual(player2.history[i], outcome2)
+        self.assertEqual(match.result, list(zip(expected_actions1, expected_actions2)))
+
+        # # Test expected sequence of play.
+        # for expected_result, result in zip(
+        #     zip(expected_actions1, expected_actions2),
+        #     match.result):
+        #     self.assertEqual()
+        #     # player1.play(player2)
+        #     # self.assertEqual(player1.history[i], outcome1)
+        #     # self.assertEqual(player2.history[i], outcome2)
+        #     self.assertEqual(match.result[i], outcome1)
+        #     self.assertEqual(player2.history[i], outcome2)
+
 
     def test_versus_with_incorrect_history_lengths(self):
         """Test the error raised by versus_test if expected actions do not
@@ -670,8 +674,7 @@ def test_memory(player, opponent, memory_length, seed=0, turns=10):
     only the given amount of memory is used.
     """
     # Play the match normally.
-    axelrod.seed(seed)
-    match = axelrod.Match((player, opponent), turns=turns)
+    match = axelrod.Match((player, opponent), turns=turns, seed=seed)
     plays = [p[0] for p in match.play()]
 
     # Play with limited history.
@@ -679,8 +682,7 @@ def test_memory(player, opponent, memory_length, seed=0, turns=10):
     opponent.reset()
     player._history = LimitedHistory(memory_length)
     opponent._history = LimitedHistory(memory_length)
-    axelrod.seed(seed)
-    match = axelrod.Match((player, opponent), turns=turns, reset=False)
+    match = axelrod.Match((player, opponent), turns=turns, reset=False, seed=seed)
     limited_plays = [p[0] for p in match.play()]
 
     return plays == limited_plays

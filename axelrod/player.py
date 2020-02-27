@@ -9,7 +9,7 @@ import numpy as np
 from axelrod.action import Action
 from axelrod.game import DefaultGame
 from axelrod.history import History
-from axelrod.random_ import random_flip
+from axelrod.random_ import RandomGenerator
 
 C, D = Action.C, Action.D
 
@@ -46,17 +46,6 @@ def obey_axelrod(s):
         or classifier["manipulates_source"]
         or classifier["manipulates_state"]
     )
-
-
-def simultaneous_play(player, coplayer, noise=0):
-    """This pits two players against each other."""
-    s1, s2 = player.strategy(coplayer), coplayer.strategy(player)
-    if noise:
-        s1 = random_flip(s1, noise)
-        s2 = random_flip(s2, noise)
-    player.update_history(s1, s2)
-    coplayer.update_history(s2, s1)
-    return s1, s2
 
 
 class Player(object):
@@ -110,6 +99,7 @@ class Player(object):
             if dimension not in self.classifier:
                 self.classifier[dimension] = self.default_classifier[dimension]
         self.set_match_attributes()
+        self.set_seed()
 
     def __eq__(self, other):
         """
@@ -122,6 +112,10 @@ class Player(object):
 
             value = getattr(self, attribute, None)
             other_value = getattr(other, attribute, None)
+
+            if attribute == "_random":
+                # Don't compare the random seeds.
+                continue
 
             if isinstance(value, np.ndarray):
                 if not (np.array_equal(value, other_value)):
@@ -169,6 +163,11 @@ class Player(object):
         self.match_attributes = {"length": length, "game": game, "noise": noise}
         self.receive_match_attributes()
 
+    def set_seed(self, seed=None):
+        """Set a random seed for the player's random number
+        generator."""
+        self._random = RandomGenerator(seed=seed)
+
     def __repr__(self):
         """The string method for the strategy.
         Appends the `__init__` parameters to the strategy's name."""
@@ -193,9 +192,9 @@ class Player(object):
         """This is a placeholder strategy."""
         raise NotImplementedError()
 
-    def play(self, opponent, noise=0):
-        """This pits two players against each other."""
-        return simultaneous_play(self, opponent, noise)
+    # def play(self, opponent, noise=0):
+    #     """This pits two players against each other."""
+    #     return simultaneous_play(self, opponent, noise)
 
     def clone(self):
         """Clones the player without history, reapplying configuration
