@@ -405,8 +405,7 @@ class TestPlayer(unittest.TestCase):
         a2 = opponent()
         self.assertEqual(p1, p2)
         for player, op in [(p1, a1), (p2, a2)]:
-            m = axelrod.Match(players=(player, op), reset=True, seed=seed,
-                              turns=10)
+            m = axelrod.Match(players=(player, op), turns=10, seed=seed)
             m.play()
         self.assertEqual(p1, p2)
         p1 = pickle.loads(pickle.dumps(p1))
@@ -483,7 +482,7 @@ class TestPlayer(unittest.TestCase):
         self.assertEqual(player2.classifier, player1.classifier)
         self.assertEqual(player2.match_attributes, player1.match_attributes)
 
-        turns = 20
+        turns = 5
         for op in [
             axelrod.Cooperator(),
             axelrod.Defector(),

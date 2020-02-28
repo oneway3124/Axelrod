@@ -3,13 +3,15 @@ import random
 import unittest
 
 import axelrod as axl
-from axelrod import EvolvablePlayer, seed
+from axelrod import EvolvablePlayer
 from axelrod.action import Action
 from axelrod.evolvable_player import copy_lists, crossover_lists, crossover_dictionaries
 from .test_player import TestPlayer
 
 C, D = Action.C, Action.D
 
+def seed(x):
+    return
 
 def PartialClass(cls, **kwargs):
 
@@ -154,14 +156,12 @@ class TestEvolvablePlayer(TestPlayer):
     def behavior_test(self, player1, player2):
         """Test that the evolvable player plays the same as its (nonevolvable) parent class."""
         for opponent_class in [axl.Random, axl.TitForTat, axl.Alternator]:
-            axl.seed(0)
             opponent = opponent_class()
-            match = axl.Match((player1.clone(), opponent))
+            match = axl.Match((player1.clone(), opponent), seed=7)
             results1 = match.play()
 
-            axl.seed(0)
             opponent = opponent_class()
-            match = axl.Match((player2.clone(), opponent))
+            match = axl.Match((player2.clone(), opponent), seed=7)
             results2 = match.play()
 
             self.assertEqual(results1, results2)
