@@ -3,10 +3,9 @@ A module for creating hypothesis based strategies for property based testing
 """
 import itertools
 
-from axelrod import Game, Match, Tournament, short_run_time_strategies, strategies
-
 from hypothesis.strategies import composite, floats, integers, lists, sampled_from
 
+from axelrod import Game, Match, Tournament, short_run_time_strategies, strategies
 
 @composite
 def strategy_lists(
@@ -124,6 +123,7 @@ def prob_end_tournaments(
     max_noise=1,
     min_repetitions=1,
     max_repetitions=20,
+    seed=None
 ):
     """
     A hypothesis decorator to return a tournament,
@@ -145,7 +145,9 @@ def prob_end_tournaments(
     min_repetitions : integer
         The minimum number of repetitions
     max_repetitions : integer
-        The maximum number of repetitions
+        The maximum number of
+    seed : integer
+        Random seed
     """
     strategies = draw(
         strategy_lists(strategies=strategies, min_size=min_size, max_size=max_size)
@@ -156,7 +158,7 @@ def prob_end_tournaments(
     noise = draw(floats(min_value=min_noise, max_value=max_noise))
 
     tournament = Tournament(
-        players, prob_end=prob_end, repetitions=repetitions, noise=noise
+        players, prob_end=prob_end, repetitions=repetitions, noise=noise, seed=seed
     )
     return tournament
 
@@ -208,7 +210,6 @@ def spatial_tournaments(
         lists(
             sampled_from(all_potential_edges),
             unique=True,
-            average_size=2 * len(players),
         )
     )
 
@@ -276,7 +277,6 @@ def prob_end_spatial_tournaments(
         lists(
             sampled_from(all_potential_edges),
             unique=True,
-            average_size=2 * len(players),
         )
     )
 

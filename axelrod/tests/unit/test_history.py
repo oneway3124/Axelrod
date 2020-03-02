@@ -68,8 +68,8 @@ class TestHistory(unittest.TestCase):
     def test_flip_plays(self):
         player = axelrod.Alternator()
         opponent = axelrod.Cooperator()
-        for _ in range(5):
-            player.play(opponent)
+        match = axelrod.Match((player, opponent), turns=5)
+        match.play()
 
         self.assertEqual(player.history, [C, D, C, D, C])
         self.assertEqual(player.cooperations, 3)

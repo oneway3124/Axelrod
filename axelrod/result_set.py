@@ -5,11 +5,11 @@ from multiprocessing import cpu_count
 
 import numpy as np
 import tqdm
-from axelrod.action import Action
 
 import dask as da
 import dask.dataframe as dd
 
+from axelrod.action import Action
 from . import eigen
 
 C, D = Action.C, Action.D

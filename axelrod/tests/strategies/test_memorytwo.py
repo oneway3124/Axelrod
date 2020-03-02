@@ -154,10 +154,10 @@ class TestMemoryStochastic(TestPlayer):
     }
 
     def test_strategy(self):
-        axelrod.seed(0)
-        vector = [random.random() for _ in range(16)]
+        rng = axelrod.RandomGenerator(seed=7888)
+        vector = [rng.random() for _ in range(16)]
 
-        actions = [(C, C), (C, C), (D, D), (D, C), (C, C), (C, D), (C, C)]
+        actions = [(C, C), (C, C), (D, D), (C, C), (D, C), (D, D), (D, C)]
         self.versus_test(
             opponent=axelrod.CyclerCCD(),
             expected_actions=actions,
@@ -165,7 +165,7 @@ class TestMemoryStochastic(TestPlayer):
             init_kwargs={"sixteen_vector": vector},
         )
 
-        actions = [(C, C), (C, C), (C, D), (D, C), (C, C), (C, D), (C, C)]
+        actions = [(C, C), (C, C), (C, D), (C, C), (D, C), (D, D), (D, C)]
         self.versus_test(
             opponent=axelrod.CyclerCCD(),
             expected_actions=actions,
@@ -173,7 +173,7 @@ class TestMemoryStochastic(TestPlayer):
             init_kwargs={"sixteen_vector": vector},
         )
 
-        actions = [(C, C), (C, C), (D, C), (D, D), (C, D), (C, C), (D, C)]
+        actions = [(C, C), (C, C), (D, C), (D, D), (D, D), (D, D), (D, D)]
         self.versus_test(
             opponent=axelrod.TitForTat(),
             expected_actions=actions,
@@ -181,7 +181,7 @@ class TestMemoryStochastic(TestPlayer):
             init_kwargs={"sixteen_vector": vector},
         )
 
-        actions = [(C, C), (C, C), (C, C), (D, C), (D, D), (C, D), (C, C)]
+        actions = [(C, C), (C, C), (C, C), (D, C), (D, D), (D, D), (D, D)]
         self.versus_test(
             opponent=axelrod.TitForTat(),
             expected_actions=actions,

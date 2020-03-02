@@ -3,13 +3,11 @@ import unittest
 from collections import Counter
 
 import axelrod
-import axelrod.interaction_utils as iu
 import pandas as pd
 from axelrod.result_set import create_counter_dict
-from axelrod.tests.property import prob_end_tournaments, tournaments
+from axelrod.tests.property import tournaments
 from numpy import mean, nanmedian, std
 
-from dask.dataframe.core import DataFrame
 from hypothesis import given, settings
 
 C, D = axelrod.Action.C, axelrod.Action.D
@@ -463,9 +461,8 @@ class TestResultSet(unittest.TestCase):
         # Based on https://github.com/Axelrod-Python/Axelrod/issues/670
         # Note that the conclusion of #670 is incorrect and only includes one of
         # the copies of the strategy.
-        axelrod.seed(0)
         players = [s() for s in axelrod.demo_strategies]
-        tournament = axelrod.Tournament(players, repetitions=2, turns=5)
+        tournament = axelrod.Tournament(players, repetitions=2, turns=5, seed=0)
         results = tournament.play(progress_bar=False)
         self.assertEqual(results.payoff_diffs_means[-1][-1], 0.0)
 

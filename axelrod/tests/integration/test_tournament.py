@@ -100,7 +100,6 @@ class TestTournament(unittest.TestCase):
         """
         files = []
         for _ in range(2):
-            axelrod.seed(0)
             stochastic_players = [
                 s()
                 for s in axelrod.short_run_time_strategies
@@ -112,6 +111,7 @@ class TestTournament(unittest.TestCase):
                 game=self.game,
                 turns=2,
                 repetitions=2,
+                seed=17
             )
             files.append("test_outputs/stochastic_tournament_{}.csv".format(_))
             tournament.play(progress_bar=False, filename=files[-1], build_results=False)
@@ -156,8 +156,7 @@ class TestProbEndTournament(unittest.TestCase):
         p2 = axelrod.Cooperator()
         p3 = axelrod.Cooperator()
         players = [p1, p2, p3]
-        axelrod.seed(0)
-        tournament = axelrod.Tournament(players, prob_end=0.5, repetitions=2)
+        tournament = axelrod.Tournament(players, prob_end=0.5, repetitions=2, seed=3)
         results = tournament.play(progress_bar=False)
         # Check that match length are different across the repetitions
         self.assertNotEqual(results.match_lengths[0], results.match_lengths[1])

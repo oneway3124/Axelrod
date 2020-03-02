@@ -1,14 +1,15 @@
 import unittest
 from collections import Counter
 
+from hypothesis import example, given
+from hypothesis.strategies import floats, integers
+
 import axelrod
 from axelrod import Action
 from axelrod.deterministic_cache import DeterministicCache
 from axelrod.random_ import RandomGenerator
 from axelrod.tests.property import games
 
-from hypothesis import example, given
-from hypothesis.strategies import assume, floats, integers
 
 C, D = Action.C, Action.D
 
@@ -119,11 +120,8 @@ class TestMatch(unittest.TestCase):
         with self.assertRaises(TypeError):
             len(match)
 
-    @given(p=floats(min_value=0, max_value=1))
+    @given(p=floats(min_value=1e-10, max_value=1-1e-10))
     def test_stochastic(self, p):
-
-        assume(0 < p < 1)
-
         p1, p2 = axelrod.Cooperator(), axelrod.Cooperator()
         match = axelrod.Match((p1, p2), 5)
         self.assertFalse(match._stochastic)
@@ -135,11 +133,8 @@ class TestMatch(unittest.TestCase):
         match = axelrod.Match((p1, p2), 5)
         self.assertTrue(match._stochastic)
 
-    @given(p=floats(min_value=0, max_value=1))
+    @given(p=floats(min_value=1e-10, max_value=1-1e-10))
     def test_cache_update_required(self, p):
-
-        assume(0 < p < 1)
-
         p1, p2 = axelrod.Cooperator(), axelrod.Cooperator()
         match = axelrod.Match((p1, p2), 5, noise=p)
         self.assertFalse(match._cache_update_required)

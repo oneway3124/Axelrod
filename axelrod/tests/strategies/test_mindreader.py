@@ -85,8 +85,8 @@ class TestMindReader(TestPlayer):
         """Ensures that a recursion error does not occur """
         p1 = axelrod.MindReader()
         p2 = axelrod.Geller()
-        p1.strategy(p2)
-        p2.strategy(p1)
+        match = axelrod.Match((p1, p2), turns=5, seed=4)
+        match.play()
 
     def test_init(self):
         """Tests for init method """

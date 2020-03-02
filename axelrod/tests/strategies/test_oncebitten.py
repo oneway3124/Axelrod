@@ -1,9 +1,6 @@
 """Tests for the once bitten strategy."""
 
-import random
-
 import axelrod
-
 from .test_player import TestPlayer
 
 C, D = axelrod.Action.C, axelrod.Action.D
@@ -68,9 +65,8 @@ class TestOnceBitten(TestPlayer):
         """Check that grudged gets reset properly"""
         p1 = self.player()
         p2 = axelrod.Defector()
-        p1.play(p2)
-        p1.play(p2)
-        p1.play(p2)
+        match = axelrod.Match((p1, p2), turns=3, seed=0)
+        match.play()
         self.assertTrue(p1.grudged)
         p1.reset()
         self.assertFalse(p1.grudged)
@@ -133,10 +129,10 @@ class TestForgetfulFoolMeOnce(TestPlayer):
         )
 
         # Sometime eventually forget count:
-        actions = [(C, D), (C, D)] + [(D, D)] * 18 + [(C, D)]
+        actions = [(C, D), (C, D)] + [(D, D)] * 3 + [(C, D)]
         self.versus_test(
             opponent=axelrod.Defector(),
             expected_actions=actions,
-            seed=2,
+            seed=4,
             attrs={"D_count": 0},
         )

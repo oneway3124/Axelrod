@@ -1,15 +1,14 @@
 import os
-import unittest
 from tempfile import mkstemp
+import unittest
 from unittest.mock import patch
 
+from hypothesis import given, settings
 import matplotlib.pyplot
 import numpy as np
-from hypothesis import given, settings
 
 import axelrod as axl
 from axelrod.fingerprint import AshlockFingerprint, Point, TransitiveFingerprint
-from axelrod.strategy_transformers import DualTransformer, JossAnnTransformer
 from axelrod.tests.property import strategy_lists
 
 C, D = axl.Action.C, axl.Action.D
@@ -241,9 +240,8 @@ class TestFingerprint(unittest.TestCase):
         self.assertEqual(coord_keys, self.points_when_using_half_step)
 
     def test_plot_data(self):
-        axl.seed(0)  # Fingerprinting is a random process.
         af = AshlockFingerprint(axl.Cooperator())
-        af.fingerprint(turns=5, repetitions=3, step=0.5, progress_bar=False)
+        af.fingerprint(turns=5, repetitions=3, step=0.5, progress_bar=False, seed=0)
 
         reshaped_data = np.array([[0.0, 0.0, 0.0], [2.0, 1.0, 2.0], [3.0, 3.0, 3.0]])
         plotted_data = af.plot().gca().images[0].get_array()
@@ -266,7 +264,6 @@ class TestFingerprint(unittest.TestCase):
         self.assertIsInstance(v, matplotlib.pyplot.Figure)
 
     def test_wsls_fingerprint(self):
-        axl.seed(0)  # Fingerprinting is a random process.
         test_data = {
             Point(x=0.0, y=0.0): 3.000,
             Point(x=0.0, y=0.25): 1.710,
@@ -295,13 +292,13 @@ class TestFingerprint(unittest.TestCase):
             Point(x=1.0, y=1.0): 1.300,
         }
         af = axl.AshlockFingerprint(axl.WinStayLoseShift(), axl.TitForTat)
-        data = af.fingerprint(turns=50, repetitions=2, step=0.25, progress_bar=False)
+        data = af.fingerprint(turns=50, repetitions=2, step=0.25, progress_bar=False,
+                              seed=0)
 
         for key, value in data.items():
             self.assertAlmostEqual(value, test_data[key], places=2)
 
     def test_tft_fingerprint(self):
-        axl.seed(0)  # Fingerprinting is a random process.
         test_data = {
             Point(x=0.0, y=0.0): 3.000,
             Point(x=0.0, y=0.25): 1.820,
@@ -331,13 +328,13 @@ class TestFingerprint(unittest.TestCase):
         }
 
         af = axl.AshlockFingerprint(axl.TitForTat(), axl.TitForTat)
-        data = af.fingerprint(turns=50, repetitions=2, step=0.25, progress_bar=False)
+        data = af.fingerprint(turns=50, repetitions=2, step=0.25, progress_bar=False,
+                              seed=0)
 
         for key, value in data.items():
             self.assertAlmostEqual(value, test_data[key], places=2)
 
     def test_majority_fingerprint(self):
-        axl.seed(0)  # Fingerprinting is a random process.
         test_data = {
             Point(x=0.0, y=0.0): 3.000,
             Point(x=0.0, y=0.25): 1.940,
@@ -367,13 +364,14 @@ class TestFingerprint(unittest.TestCase):
         }
 
         af = axl.AshlockFingerprint(axl.GoByMajority, axl.TitForTat)
-        data = af.fingerprint(turns=50, repetitions=2, step=0.25, progress_bar=False)
+        data = af.fingerprint(turns=50, repetitions=2, step=0.25, progress_bar=False,
+                              seed=0)
 
         for key, value in data.items():
             self.assertAlmostEqual(value, test_data[key], places=2)
 
     @given(strategy_pair=strategy_lists(min_size=2, max_size=2))
-    @settings(max_examples=5)
+    @settings(max_examples=5, deadline=None)
     def test_pair_fingerprints(self, strategy_pair):
         """
         A test to check that we can fingerprint

@@ -71,6 +71,7 @@ class FirstByDavis(Player):
             return D
         return C
 
+
 class FirstByDowning(Player):
     """
     Submitted to Axelrod's first tournament by Downing
@@ -255,19 +256,17 @@ class FirstByDowning(Player):
                 self.number_opponent_cooperations_in_response_to_C += 1
             return D
 
-
         if self.history[-2] == C and opponent.history[-1] == C:
             self.number_opponent_cooperations_in_response_to_C += 1
         if self.history[-2] == D and opponent.history[-1] == C:
             self.number_opponent_cooperations_in_response_to_D += 1
 
+        # Adding 1 to denominator count for assumption that first opponent move
+        # being a response to a cooperation. See docstring for more information.
         alpha = (self.number_opponent_cooperations_in_response_to_C /
-                 (self.cooperations + 1))  # Adding 1 to count for assumption
-                                           # that first opponent move being a
-                                           # response to a cooperation. See
-                                           # docstring for more information.
+                 (self.cooperations + 1))
         beta = (self.number_opponent_cooperations_in_response_to_D /
-                 (self.defections))
+                 max(self.defections, 1))
 
         R, P, S, T = self.match_attributes["game"].RPST()
         expected_value_of_cooperating = alpha * R + (1 - alpha) * S

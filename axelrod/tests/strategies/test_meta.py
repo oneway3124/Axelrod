@@ -62,7 +62,7 @@ class TestMetaPlayer(TestPlayer):
         )
 
     @given(seed=integers(min_value=1, max_value=20000000))
-    @settings(max_examples=1)
+    @settings(max_examples=1, deadline=None)
     def test_clone(self, seed):
         # Test that the cloned player produces identical play
         player1 = self.player()
@@ -182,20 +182,20 @@ class TestNiceMetaWinner(TestMetaPlayer):
 
         opponent = axelrod.Cooperator()
         player = axelrod.NiceMetaWinner(team=[axelrod.Cooperator, axelrod.Defector])
-        for _ in range(5):
-            player.play(opponent)
+        match = axelrod.Match((player, opponent), turns=5)
+        match.play()
         self.assertEqual(player.history[-1], C)
 
         opponent = axelrod.Defector()
         player = axelrod.NiceMetaWinner(team=[axelrod.Defector])
-        for _ in range(20):
-            player.play(opponent)
+        match = axelrod.Match((player, opponent), turns=20)
+        match.play()
         self.assertEqual(player.history[-1], D)
 
         opponent = axelrod.Defector()
         player = axelrod.MetaWinner(team=[axelrod.Cooperator, axelrod.Defector])
-        for _ in range(20):
-            player.play(opponent)
+        match = axelrod.Match((player, opponent), turns=20)
+        match.play()
         self.assertEqual(player.history[-1], D)
 
 
@@ -504,8 +504,6 @@ class TestMetaMixer(TestMetaPlayer):
         team = [axelrod.TitForTat, axelrod.Cooperator, axelrod.Grudger]
         distribution = [0.2, 0.5, 0.3]
 
-        P1 = axelrod.MetaMixer(team=team, distribution=distribution)
-        P2 = axelrod.Cooperator()
         actions = [(C, C)] * 20
         self.versus_test(
             opponent=axelrod.Cooperator(),
@@ -534,8 +532,8 @@ class TestMetaMixer(TestMetaPlayer):
         distribution = [0.2, 0.5, 0.5]  # Not a valid probability distribution
 
         player = axelrod.MetaMixer(team=team, distribution=distribution)
+        player.set_seed(100)
         opponent = axelrod.Cooperator()
-
         self.assertRaises(ValueError, player.strategy, opponent)
 
 

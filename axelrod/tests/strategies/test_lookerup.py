@@ -12,7 +12,6 @@ from axelrod.strategies.lookerup import (
     Plays,
     create_lookup_table_keys,
     make_keys_into_plays,
-    default_tft_lookup_table
 )
 
 from .test_player import TestPlayer
@@ -677,17 +676,17 @@ class TestEvolvableLookerUp(unittest.TestCase):
 
         self.assertRaises(
             InsufficientParametersError,
-            self.player_class._normalize_parameters
+            self.player_class
         )
         self.assertRaises(
             InsufficientParametersError,
-            self.player_class._normalize_parameters,
+            self.player_class,
             pattern=pattern,
             initial_actions=initial_actions
         )
         self.assertRaises(
             InsufficientParametersError,
-            self.player_class._normalize_parameters,
+            self.player_class,
             lookup_dict=lookup_dict,
         )
 

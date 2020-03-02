@@ -70,6 +70,7 @@ class Match(object):
         self.noise = noise
 
         self.seed = seed
+        self._random = RandomGenerator(seed=self.seed)
 
         if game is None:
             self.game = Game()
@@ -166,8 +167,6 @@ class Match(object):
 
         i.e. One entry per turn containing a pair of actions.
         """
-        # if self._stochastic:
-        self._random = RandomGenerator(seed=self.seed)
         if self.prob_end:
             r = self._random.random()
             turns = min(sample_length(self.prob_end, r), self.turns)
@@ -182,6 +181,7 @@ class Match(object):
                 p.set_match_attributes(**self.match_attributes)
                 # if p.classifier["stochastic"]:
                 # Generate a random seed for the player
+                # TODO: Seeds only for stochastic players
                 p.set_seed(self._random.random_seed_int())
             result = []
             for _ in range(turns):
