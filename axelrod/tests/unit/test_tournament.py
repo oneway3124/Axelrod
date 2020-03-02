@@ -754,13 +754,14 @@ class TestTournament(unittest.TestCase):
     def test_seeding_equality(self, seed):
         """Tests that a tournament with a given seed will return the
         same results each time."""
-        players = [axelrod.Random(0.4), axelrod.Random(0.6), axelrod.Random(0.8)]
+        rng = axelrod.RandomGenerator(seed=seed)
+        players = [axelrod.Random(rng.random()) for _ in range(8)]
         tournament1 = axelrod.Tournament(
             name=self.test_name,
             players=players,
             game=self.game,
             turns=3,
-            repetitions=3,
+            repetitions=100,
             seed=seed
         )
         tournament2 = axelrod.Tournament(
@@ -768,12 +769,12 @@ class TestTournament(unittest.TestCase):
             players=players,
             game=self.game,
             turns=3,
-            repetitions=3,
+            repetitions=100,
             seed=seed
         )
-        results1 = tournament1.play()
-        results2 = tournament2.play()
-        self.assertEqual(results1.summarise(), results2.summarise())
+        results1 = tournament1.play(processes=2)
+        results2 = tournament2.play(processes=2)
+        self.assertEqual(results1.ranked_names, results2.ranked_names)
 
     def test_seeding_inequality(self):
         players = [axelrod.Random(0.4), axelrod.Random(0.6)]
