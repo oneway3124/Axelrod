@@ -86,7 +86,7 @@ class TestFiltersAgainstComprehensions(unittest.TestCase):
     @given(seed_=integers(min_value=0, max_value=4294967295),
            strategies=strategy_lists(min_size=20, max_size=20),
            )
-    @settings(max_examples=5)
+    @settings(max_examples=5, deadline=None)
     def test_makes_use_of_filtering(self, seed_, strategies):
         """
         Test equivalent filtering using two approaches.
